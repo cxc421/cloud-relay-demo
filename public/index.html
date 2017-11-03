@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>NAT Demo</title>
+	<link rel="stylesheet" type="text/css" href="/style.css">
+</head>
+<body>
+	<div class="container">
+		<h1>Relay through NAT Demo Page</h1>
+		<hr />
+
+		<h2>POST Test:</h2>		
+		<p>
+			<span>CH: </span>
+			<input type="text" id="val-1" value="1" />
+		</p>
+		<p>
+			<span>Time: </span>
+			<input type="text" id="val-2" value="9987654" />
+		</p>		
+		<button id="post-send">Send</button><span id='post-res' class="result"></span>
+		<hr />
+
+		<h2>Upload Test:</h2>		
+		<form action="/web/upload" method="post" enctype="multipart/form-data">
+			<p>
+				<input type="file" name="file1">		  
+			</p>		  
+		  <!-- <input type="file" name="file2" multiple>       -->
+		  <input type="submit" value="Upload" />			
+		</form>
+		<hr />
+
+		<img src="./one-piece.jpg" alt="img-not-found" />
+	</div>
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>	
+	<script type="text/javascript">
+		$('#post-send').click(function() {
+			var data = {
+				ch  : $('#val-1').val(),
+				time: $('#val-2').val()
+			};
+
+			trans('POST', {
+				url: '/test_post',
+				data: data,
+				success: function(json) {
+					console.log(json);
+					if (typeof json === 'object') {
+						$('#post-res').text(JSON.stringify(json));
+					}	
+					else {
+						$('#post-res').text(json);
+					}				
+				},
+				error: function() {
+					$('#post-res').text('Network error!');					
+				}				
+			});			
+		});
+
+		function trans (type, spec) {
+		  var _data, _contentType;
+
+		  if (type === 'GET') {
+		    _data = spec.data;
+		    _contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+		  }
+		  else {
+		    _data = JSON.stringify(spec.data);
+		    _contentType = 'application/json; charset=utf-8';
+		  }
+
+		  return $.ajax({
+		      url: spec.url,
+		      type: type,
+		      data: _data,
+		      contentType: _contentType,
+		      cache: false,
+		      dataType: 'json',
+		      success: function (json) {
+		        if (spec.success) {
+		          spec.success(json);
+		        }
+		      },
+		      error: function(jqXHR, textStatus, errorThrown) {
+		        var ct = jqXHR.responseText || "";
+		        //console.error('AJAX-IN Error', ct.indexOf('html'), ct.indexOf('Login'), jqXHR);
+		        console.error('AJAX Error', textStatus, jqXHR);
+		        if (spec.error) {
+		          spec.error.apply(null, arguments);
+		        }
+		      },
+		      complete: function () {
+		        if (spec.done) {
+		          spec.done.apply(null, arguments);
+		        }
+		      }
+		  });
+		}			
+	</script>
+</body>
+</html>
