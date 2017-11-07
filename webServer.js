@@ -9,11 +9,14 @@ var uaParser = require('ua-parser-js');
 const formidable = require('formidable');
 var logger = require("morgan");
 var uuid = require('uuid');
+const WebSocket = require('ws');
 // var formidable = require('formidable');
 // var util = require('./lib/util');
+const LOGIN_EXPIRE_TIME = 311040000000;
 const PUBLIC_FOLDER_PATH = path.resolve(__dirname, "public");
 const UPLOAD_FOLDER_PATH = path.resolve(__dirname, 'web_upload');
 const { WEB_SERVER_PORT } = require('./config.json');
+const { WS_PROTOCOL } = require('./constants.js');
 
 try {
   fs.accessSync(UPLOAD_FOLDER_PATH);
@@ -99,12 +102,18 @@ function getReqParam(req) {
 	app.use(cookieParser());
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({extended: false}));
-
+  // app.use((req, res, next) => {
+  //   console.log('=========================');
+  //   console.log(req.cookies);
+  //   next();
+  // });
 
   //public static files
   app.use(express.static( PUBLIC_FOLDER_PATH )); 
 
 	// cgi
+  app.get('/test_cookie', onCookieGet);
+  app.get('/clear_cookie', onClearCookieGet);
 	app.post('/upload', onFileUpload);
   app.post('/test_post', onTestPost);
 	// app.all("/sdp/register", registerSDP);
@@ -116,6 +125,51 @@ function getReqParam(req) {
 	app.use( onRequestNotFound );
 
 	// start server
-	http.createServer(app).listen(WEB_SERVER_PORT); 		
-  console.log('listening on port: ' + WEB_SERVER_PORT);
+	// http.createServer(app).listen(WEB_SERVER_PORT); 		
+ //  console.log('listening on port: ' + WEB_SERVER_PORT);
+ const server = http.createServer(app);
+ const handleProtocols = (protocols, req) => {
+  console.log('New protocols:', protocols);
+  if (protocols[0] === 'web_liquid_info') {
+    return protocols[0];
+  }
+  console.error('Wrong WebSocket protocol = ' + protocols[0]);
+  return false;  
+ };
+ const wss = new WebSocket.Server({ server, handleProtocols }); 
+ wss.on('connection', (ws, req) => {
+  console.log('New Websocket Connected!');
+  ws.on('message', (message) => console.log('Message received:' + message));
+  ws.on('close', () => console.log('WebSocket Close.'));
+  ws.send('Msg from NVR -- 192.168.6.191');
+ });
+ wss.on('error', (error) => console.error('[wss] Error! ' + error.message));
+
+ server.listen(WEB_SERVER_PORT, () => console.log(`Listening on ${ server.address().port }`));
 })();
+
+function onCookieGet(req, res) {  
+  console.log('=================');
+  // console.log(req.cookies);
+  // console.log(req.cookies['client-cookie']);
+  console.log(req.headers.cookie);
+
+  let nvrCookieVal = 'Unknow';
+  if (req.cookies['client-cookie']) {
+    nvrCookieVal = req.cookies['client-cookie'];
+  }
+
+  res.cookie('nvr-cookie', nvrCookieVal, { maxAge: LOGIN_EXPIRE_TIME, httpOnly: true });
+  res.json({
+    code: 0,
+    msg: 'Set cookie Success!'
+  });
+}
+
+function onClearCookieGet(req, res) {
+  res.clearCookie('nvr-cookie', { maxAge: 1, httpOnly: true });
+  res.json({
+    code: 0,
+    msg: 'Clear cookie Success!'    
+  });
+}

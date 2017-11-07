@@ -14,6 +14,75 @@
       <input type="file" name="sampleFile_2" multiple /> 
       <input type='submit' value='Upload!' />
   </form> 
+
+  <hr />
+  <h2>WebSocket Test:</h2>
+  <button id="ws-btn">Connect</button>  
   <!-- <img src="one-piece.jpg" /> -->
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.min.js"
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+    crossorigin="anonymous"></script> 
+  <script type="text/javascript">
+
+    // function setCookie(cname, cvalue, exdays) {
+    //     var d = new Date();
+    //     d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    //     var expires = "expires="+ d.toUTCString();
+    //     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    // }
+
+    // setCookie('color', 'red', 1);
+
+    $('#ws-btn').click(function(){
+      var configMap = {
+            wsProtocol: 'web_liquid_info',    
+            wsPort    : 8080,               // default value
+            wsIp      : 'locolhost'  
+          },    
+          stateMap = {
+            everConnectSuccess: false
+          },
+          camInfoStr       = "camera_list",
+          motionInfoStr    = "motion_info",
+          pbCamInfoStr     = "pb_camera_list",
+          pbMotionInfoStr  = "pb_motion_info",
+          motionTriggerStr = "motion_trigger_info",
+          eventStateStr    = "event_state",
+          playStr          = "PLAY",
+          stopStr          = "STOP",      
+          ws;     
+
+      configMap.wsIp = 'ws://127.0.0.1';
+      initWS();       
+
+      function initWS() {  
+        console.info('WEB_MODEL_WEBSOCKET = '  +  configMap.wsIp + ':' + configMap.wsPort);
+        ws = new WebSocket(
+          configMap.wsIp + ':' + configMap.wsPort,
+          [configMap.wsProtocol, 'TEST_PROTOCOL']
+        );
+        // ws = new WebSocket(
+        //   configMap.wsIp + ':' + configMap.wsPort
+        // );        
+        ws.onmessage = onWebSocketMessage;
+        ws.onopen = onWebSocketOpen;
+        ws.onclose = onWebSocketClose;
+      }     
+      
+      function onWebSocketMessage(msg) {
+        console.log('onWebSocketMessage:');
+        console.log(msg);
+      }
+
+      function onWebSocketOpen() {
+        console.log('WebSocket Open!');
+      }
+
+      function onWebSocketClose() {
+        console.log('WebSocket CLose!');
+      }
+    });    
+  </script>  
 </body>
 </html>

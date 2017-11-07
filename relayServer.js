@@ -14,8 +14,9 @@ const uuid = require('uuid');
 
 const app = express();
 const { RELAY_SERVER_PORT } = require('./config.json');
-const { CMD, CMD_TYPE, RESULT } = require('./constants.js');
+const { CMD, CMD_TYPE, RESULT, WS_PROTOCOL } = require('./constants.js');
 const resStore = {};
+const wsStore = {};
 let globalWs = null;  // Assume only one relayClient !!!!!!
 
 const UPLOAD_FOLDER_NAME = "cloud_upload";
@@ -40,16 +41,78 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
   // app.use('/', makeNormalRequest);
 
   const server = http.createServer(app);
-  const wss = new WebSocket.Server({ server });
+  const handleProtocols = (protocols, req) => {
+    if (protocols[0] === WS_PROTOCOL.P2P) {
+      try {
+        const __nextWs = wsStore[ protocols[1] ];
+        req['__nextWs'] = __nextWs;
+      } 
+      catch(e) {
+        console.error('\n handleProtocols error:');
+        console.error(`protocols[1] = ${protocols[1]}`);
+        if (protocols[1]) {
+          console.error(`Can't find wsStore with this uuid!`);
+        }
+        return false;
+      }
+    }
+    return protocols[0];
+  };
+  const wss = new WebSocket.Server({ server, handleProtocols });
   wss.on('connection', function connection(ws, req) {
     // const location = url.parse(req.url, true);
     // You might use location.query.access_token to authenticate or share sessions
     // or req.headers.cookie (see http://stackoverflow.com/a/16395220/151312)
-    console.log('New connection!');
-    globalWs = ws;
-    ws.on('message', onWebSocketMessage); 
-    ws.on('close', onWebsocketClose);
-    ws.on('open', onWebSocketOpen);
+    // console.log('New connection! protocol = ' + ws.protocol);
+    switch (ws.protocol) {
+      case WS_PROTOCOL.HTTP: {
+        globalWs = ws;
+        ws.on('message', onWebSocketMessage); 
+        ws.on('close', onWebsocketClose);
+        ws.on('open', onWebSocketOpen);      
+        break;
+      }      
+      case WS_PROTOCOL.P2P: {
+        // save 
+        const __nextWs = req.__nextWs;
+        delete req.__nextWs;
+        // bind to each
+        ws['__nextWs'] = __nextWs;
+        __nextWs['__nextWs'] = ws;
+        // init cached
+        ws['__cachedMsgList'] = [];
+        // bind events;
+        ws.on('message', onWebSocketMessage_WEB_P2P);         
+        ws.on('close', () => {
+          console.log('\n WebSocket from P2P Close!');
+          if (ws.__nextWs && ws.__nextWs.readyState === WebSocket.OPEN) {
+            ws.__nextWs.terminate();
+          }
+          ws['__nextWs'] = null;
+          ws['__cachedMsgList'] = null;                              
+        });
+        break;      
+      }  
+      default: {
+        const uuid = genUUID();
+        ws['__nextWs'] = null;
+        ws['__cachedMsgList'] = [];
+        wsStore[uuid] = ws;
+
+        ws.on('message', onWebSocketMessage_WEB_P2P);         
+        ws.on('close', () => {
+          console.log('\n WebSocket from Web Close!');
+          if (ws.__nextWs && ws.__nextWs.readyState === WebSocket.OPEN) {
+            ws.__nextWs.terminate();
+          }          
+          ws['__nextWs'] = null;
+          ws['__cachedMsgList'] = null;                    
+          delete wsStore[uuid];
+        });                    
+        askRelayClientMakeNewSocket(ws.protocol, uuid);
+        break;
+      }    
+    }
     // ws.send('something');
   });
   wss.on('error', error => {
@@ -64,11 +127,14 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
 
 //=========================== BEGIN CGI FUNCTIONS ===========================//
 function onGetDefaultRequest(req, res) {
-  if (globalWs && globalWs.readyState == 1) {
+  console.log('\n----------------On Request---------------------:');
+  console.log( req.method + ': ' + req.originalUrl);
+  if (globalWs && globalWs.readyState == WebSocket.OPEN) {
     const uuid = genUUID();  
     const data = genDataToWs(req);
     resStore[uuid] = res;
     data['uuid'] = uuid;
+    data['cookie'] = req.headers.cookie;
     // console.log('\n=== send');
     // console.log(data);
     globalWs.send(JSON.stringify( data ));
@@ -111,7 +177,7 @@ function onRelayUpload(req, res) {
         // fs.rename(file.path, newFilePath);        
         fileList.push({
           oriPath: file.path,
-          newPath: newFilePath
+          newPath: newFilePath.split('?')[0]
         });
       }        
       else {        
@@ -128,27 +194,30 @@ function onRelayUpload(req, res) {
     form.parse(req, function(err, fields, files) {  
     });    
     form.on('end', function() {
-      console.log('Uplaod Complete!');
-      console.log(fileList);
+      // console.log('Uplaod Complete!');
+      // console.log(fileList);
       //console.log(files);
       const totalFilesNum = fileList.length;
       let count = 0;
       if (totalFilesNum !== 0) {
-        fileList.forEach(({oriPath, newPath}) => {
-          fs.rename(oriPath, newPath, (err) => {
-            if (err) {
-              console.error('\nRename failed ????????\n');
-            }
-            count++;
-            if (count === totalFilesNum) {
-              res.json({
-                code     : 0,
-                msg      : 'Upload success!',
-                subFolder: SUB_FOLDER_NAME
-              });
-            }
-          });
-        });
+        ensureAllFileReady(fileList.map(f => f.oriPath), () => {
+          fileList.forEach(({oriPath, newPath}) => {
+            fs.rename(oriPath, newPath, (err) => {
+              if (err) {
+                console.error('\nRename failed ????????\n');
+                console.error(err.message);
+              }
+              count++;
+              if (count === totalFilesNum) {
+                res.json({
+                  code     : 0,
+                  msg      : 'Upload success!',
+                  subFolder: SUB_FOLDER_NAME
+                });
+              }
+            });
+          });          
+        });        
       }
       else{
         _makeFailedResponse('Empty files');
@@ -157,23 +226,44 @@ function onRelayUpload(req, res) {
   }
 }
 
+function ensureAllFileReady(fileList, cb) {
+  let curIndex = 0;
+  const check = () => {
+    fs.access( fileList[curIndex] , (err) => {
+      if (err) {
+        setTimeout( check, 10 );
+        return false;
+      }
+      // console.log('EXIST: ' + fileList[curIndex]);
+      curIndex++;
+      if (curIndex < fileList.length) {        
+        check();
+      }
+      else {
+        cb();
+      }
+    });    
+  };
+  check();
+}
+
 function onRelayDowload(req, res) {
-  console.log('\n===============onRelayDowload:');
+  // console.log('\n===============onRelayDowload:');
   // console.log(`req.params.filePath = ${req.params.filePath}`);  
   const {mainFolder, subFolder, fileName} = req.params;
   const fileAbsPath = path.resolve(__dirname, mainFolder, subFolder, fileName);
   console.log(fileAbsPath);
   fs.access(fileAbsPath, (err) => {    
     if (err) {
-      console.log('a:' + err.message);
+      // console.log('a:' + err.message);
       return res.status(404).end('Files not found!');
     }     
     res.sendFile(fileAbsPath, (err) => {
       if (err) {
-        console.log('b:' + err.message);
+        // console.log('b:' + err.message);
         return res.status(500).end('Send file error!');
       }         
-      console.log(`download ${fileAbsPath} done.`);                    
+      // console.log(`download ${fileAbsPath} done.`);                    
     });             
   });  
 }
@@ -228,8 +318,8 @@ function onWebUpload(req, res) {
     });
     form.parse(req, function(err, fields, files) {});    
     form.on('end', function() {
-      console.log('Uplaod Complete!');
-      console.log(fileList);
+      // console.log('Uplaod Complete!');
+      // console.log(fileList);
       //console.log(files);
       const totalFilesNum = fileList.length;
       let count = 0;
@@ -263,7 +353,8 @@ function onWebSocketMessage( data ) {
   // data = JSON.parse(data);
   // console.log('[wss]: received: %s', data.result);
   const replyData = JSON.parse(data);
-
+  console.log('\n===================On Message====================:');
+  console.log( replyData );
   // console.log('\n=== received');
   // console.log(replyData);
 
@@ -304,7 +395,24 @@ function onWebsocketClose() {
 }
 
 function onWebSocketOpen() {
+
   console.log('[wss]: connection created!')
+}
+
+function onWebSocketMessage_WEB_P2P( newMsg ) {
+  if (this.__nextWs !== null && this.__nextWs.readyState === WebSocket.OPEN) {
+    // Ensure pre cahedMsg All send
+    while( this.__cachedMsgList.length > 0 ) {
+      const cachedMsg = this.__cachedMsgList.shift();
+      this.__nextWs.send( cachedMsg );
+    }
+    // Send new msg
+    this.__nextWs.send( newMsg );
+  }
+  else {
+    // Cached msg
+    this.__cachedMsgList.push( newMsg );
+  }
 }
 //=========================== END WEBSOCKET EVENTS ==============================//
 
@@ -325,7 +433,7 @@ function genDataToWs(req) {
   }
   else {
     return {
-      cmd        : CMD.NORMAL_REQUEST,
+      cmd        : CMD.HTTP_REQUEST,
       httpVersion: req.httpVersion,
       headers    : req.headers,
       trailers   : req.trailers,
@@ -336,8 +444,29 @@ function genDataToWs(req) {
   }
 }
 
-function processNormalResponse(res, replyData) {
-  res.write(replyData.body);
+function processNormalResponse(res, replyData) {  
+  var headerObj = {};
+  // console.log('************************');
+  // console.log(replyData);
+  if (replyData.setCookie) {
+    headerObj['Set-Cookie'] = replyData.setCookie;
+  }
+  if (replyData.location) {
+    headerObj['Location'] = replyData.location; 
+    // console.log('SET Location!');
+  }
+  res.writeHead(replyData.statusCode, headerObj);      
+  if (typeof replyData.body !== 'string') {
+    try {
+      res.write( JSON.stringify(replyData.body) );
+    }
+    catch(e) {
+      res.write( (replyData.body).toString() );
+    }
+  }
+  else {
+    res.write(replyData.body);
+  }  
   res.end();  
 }
 
@@ -388,7 +517,7 @@ function processFileUploadResponse(res, replyData) {
 
 function askRelayClientToBypassUploadFile(res, subFolder, fileNameList) {
 
-  if (globalWs && globalWs.readyState == 1) {
+  if (globalWs && globalWs.readyState == WebSocket.OPEN) {
     const uuid = genUUID();  
     const data = {
       cmd         : CMD.FILE_REQUEST,
@@ -406,6 +535,16 @@ function askRelayClientToBypassUploadFile(res, subFolder, fileNameList) {
   else {
     res.status(500).end('WebSocket Not connected!');
   }  
+}
+
+function askRelayClientMakeNewSocket(wsProtocol, uuid) {
+  if (globalWs && globalWs.readyState === WebSocket.OPEN) {
+    globalWs.send(JSON.stringify({
+      wsProtocol: wsProtocol,
+      uuid      : uuid,
+      cmd       : CMD.WEBSOCKET_REQUEST
+    }));
+  }
 }
 
 function genUUID() {
