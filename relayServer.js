@@ -18,6 +18,35 @@ const { CMD, CMD_TYPE, RESULT, WS_PROTOCOL } = require('./constants.js');
 const resStore = {};
 const wsStore = {};
 let globalWs = null;  // Assume only one relayClient !!!!!!
+const wsCounter = {
+  p2p : 0,
+  http: 0,
+  web : 0,
+  add: function (type) {
+    if (this[type] !== undefined) {
+      this[type]++;
+      console.log(`\nWebSocket Connect! type = ${type}`);
+      this.show();
+    }
+    else {
+      console.log(`\nwsCounter error!. type = ${type}`);
+    }
+  },
+  delete: function (type) {
+    if (this[type] !== undefined) {
+      this[type]--;
+      console.log(`\nWebSocket Close! type = ${type}`);
+      this.show();      
+    }
+    else {
+      console.log(`\nwsCounter error!. type = ${type}`);
+    }
+  },
+  show: function() {
+    console.log(`p2p: ${this.p2p}, http: ${this.http}, web:${this.web}\n`);
+  }
+};
+
 
 const UPLOAD_FOLDER_NAME = "cloud_upload";
 const UPLOAD_FOLDER_PATH = path.resolve(__dirname, UPLOAD_FOLDER_NAME);
@@ -66,13 +95,30 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
     // console.log('New connection! protocol = ' + ws.protocol);
     switch (ws.protocol) {
       case WS_PROTOCOL.HTTP: {
+        // count        
+        wsCounter.add('http');
         globalWs = ws;
         ws.on('message', onWebSocketMessage); 
-        ws.on('close', onWebsocketClose);
-        ws.on('open', onWebSocketOpen);      
+        // ws.on('close', onWebsocketClose);     
+        ws.on('close', () => {
+          // count        
+          wsCounter.delete('http');
+          
+          // clear all cached response
+          for (let uuid in resStore) {
+            const res = resStore[uuid];
+            res.status(500).end('WebSocket Close.');
+            delete resStore[uuid];
+          }
+          // clear cached webscoket
+          globalWs = null;
+        });         
         break;
       }      
       case WS_PROTOCOL.P2P: {
+        // count        
+        wsCounter.add('p2p');
+
         // save 
         const __nextWs = req.__nextWs;
         delete req.__nextWs;
@@ -84,7 +130,9 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
         // bind events;
         ws.on('message', onWebSocketMessage_WEB_P2P);         
         ws.on('close', () => {
-          console.log('\n WebSocket from P2P Close!');
+          // count        
+          wsCounter.delete('p2p');
+          
           if (ws.__nextWs && ws.__nextWs.readyState === WebSocket.OPEN) {
             ws.__nextWs.terminate();
           }
@@ -94,6 +142,9 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
         break;      
       }  
       default: {
+        // count        
+        wsCounter.add('web');
+
         const uuid = genUUID();
         ws['__nextWs'] = null;
         ws['__cachedMsgList'] = [];
@@ -101,7 +152,9 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
 
         ws.on('message', onWebSocketMessage_WEB_P2P);         
         ws.on('close', () => {
-          console.log('\n WebSocket from Web Close!');
+          // count        
+          wsCounter.delete('web');
+          
           if (ws.__nextWs && ws.__nextWs.readyState === WebSocket.OPEN) {
             ws.__nextWs.terminate();
           }          
@@ -354,7 +407,8 @@ function onWebSocketMessage( data ) {
   // console.log('[wss]: received: %s', data.result);
   const replyData = JSON.parse(data);
   console.log('\n===================On Message====================:');
-  console.log( replyData );
+  console.log(`url=${replyData.url}, cmd=${replyData.cmd}, uuid=${replyData.uuid}`);
+  // console.log( replyData );
   // console.log('\n=== received');
   // console.log(replyData);
 

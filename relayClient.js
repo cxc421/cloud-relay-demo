@@ -8,6 +8,19 @@ const { RELAY_SERVER_IP, RELAY_SERVER_PORT, WEB_SERVER_PORT, WEB_SERVER_IP } = r
 const { CMD, CMD_TYPE, RESULT, WS_PROTOCOL } = require('./constants.js');
 let ws = null;
 
+// debug
+const SHOW_LOG_TYPE = 'GENPBKEY_TEST';
+(()=>{	
+	const preLog = console.log;
+	console.log = function(type) {
+		if (type === SHOW_LOG_TYPE) {
+			Array.prototype.shift.call(arguments);
+			preLog.apply(console, arguments);
+			// preLog.apply(console, );
+		}
+	}
+})();
+
 function onReceiveCloudMessage(dataJson) {
   const data = JSON.parse(dataJson);
 
@@ -214,6 +227,13 @@ function processNormalRequest(data) {
     body: data.body,
     encoding : "utf8"
   };	
+
+  if (data.method === 'POST') {
+	  const headers = options.headers;
+	  delete headers['Content-Length'];
+	  delete headers['content-length'];  	
+  }
+
   if (data.url === '/login') {
 	  options["headers"] = {
 	  	"Content-Type": "application/json",
@@ -224,26 +244,23 @@ function processNormalRequest(data) {
 	  
 	  console.log('\n**************************************');
 	  console.log(options);
-
-
 	  // const headers = options.headers;
-	  // delete headers['Cookie'];
-	  // delete headers['Referer'];
-	  // delete headers['Accept-Encoding'];
-	  // delete headers['Accept-Language'];
-	  // delete headers['User-Agent'];
-
 	  // delete headers['Content-Length'];
 	  // delete headers['content-length'];
+  }
+
+  if (data.url.indexOf('gen_pbkey') >= 0) {
+  	console.log(SHOW_LOG_TYPE, '\n**************************************');
+  	console.log(SHOW_LOG_TYPE, options);
   }
 
 
   request(options, function(err, res, body) {
   	if (err) {
-  		console.log('ERROR QQ');
-  		console.log(err.message);
-  		console.log('\n Before Send:');
-  		console.log(options);
+  		console.error('ERROR QQ');
+  		console.error(err.message);
+  		console.error('\n Before Send:');
+  		console.error(options);
   	}
   	else {
       if (ws && ws.readyState == WebSocket.OPEN) {
@@ -253,10 +270,15 @@ function processNormalRequest(data) {
           cmd       : data.cmd,
           setCookie : res.headers['set-cookie'],
           statusCode: res.statusCode,
-          location  : res.headers['location']
+          location  : res.headers['location'],
+          url       : data.url   // debug useage
           // rawHeaders: res.rawHeaders,
           // statusCode: res.statusCode
-        };        
+        };   
+        if (data.url.indexOf('gen_pbkey') >= 0) {
+					console.log(SHOW_LOG_TYPE, replyData);
+        }        
+
         ws.send(JSON.stringify(replyData));
       }
       else {
@@ -374,7 +396,7 @@ function onWebsocetError(e) {
 
 function genNewWebSocketInstance() {
   ws = new WebSocket(`ws://${RELAY_SERVER_IP}:${RELAY_SERVER_PORT}`, WS_PROTOCOL.HTTP); 
-  ws.on('open', d => console.log('[ws-client]: connected'));
+  ws.on('open', d => console.log(SHOW_LOG_TYPE, '[ws-client]: connected'));
   ws.on('message', onReceiveCloudMessage);
   ws.on('error', onWebsocetError);
   ws.on('close', onWebSocketClose );  
