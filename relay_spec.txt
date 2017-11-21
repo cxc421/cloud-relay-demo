@@ -1,0 +1,31 @@
+0. 初始化
+- Relay Server 啟動
+- Relay Client 啟動, 向 Relay Server 建立一個 websocket 通道 ( protocal: "WS_PROTOCOL/HTTP" )
+
+1. 一般 CGI Request
+
+- 流程:
+	(1). Relay Server 接收到 Web Client 發出的 CGI 請求, 經拆解後, 透過 websocket 傳遞下列 JSON 資料給 Relay Client:
+    {
+      cmd        : "CMD_MAIN_TYPE/HTTP_REQUEST",
+      headers    : req.headers,
+      method     : req.method,
+      url        : req.originalUrl,
+      body       : (method === 'POST' || method === 'PUT') ? JSON.stringify(req.body) : undefined,
+     	uuid       : uuid
+    }      	
+  (2). Relay Client 通過接收到的資訊, 重新向 Web Server 發出一樣的 HTTP Request.
+  (3). Relay Client 接收到 Web Server 的 HTTP Respond, 經拆解後, 透過 websocket 回傳下列 JSON 資料給 Relay Server:
+	  {
+	    body      : body,
+	    uuid      : data.uuid,
+	    cmd       : data.cmd,
+	    setCookie : res.headers['set-cookie'],
+	    statusCode: res.statusCode,
+	    location  : res.headers['location'],
+	    url       : data.url   
+	  };  
+	(4) Relay Client 通過接收到的資訊, 回傳給 Web Client.
+
+- 例子:
+	(1). 

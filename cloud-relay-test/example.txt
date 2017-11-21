@@ -1,0 +1,76 @@
+EX-1:  GET: /test/add?a=10&b=20&_=1511241852851
+
+'Relay Server' => 'Relay Client':
+================================================
+{ cmd: 'CMD_MAIN_TYPE/HTTP_REQUEST',
+  httpVersion: '1.1',
+  headers:
+   { host: '127.0.0.1',
+     connection: 'keep-alive',
+     accept: 'application/json, text/javascript, */*; q=0.01',
+     'x-requested-with': 'XMLHttpRequest',
+     'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36
+(KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
+     'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+     referer: 'http://127.0.0.1/test.html',
+     'accept-encoding': 'gzip, deflate, br',
+     'accept-language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+     cookie: 'login-target=192.168.6.135; connect.sid=s%3AhG3MHUoCxsWftp38Y-2wP6
+QE_6fS5NMX.Xr63d18gW2LdMifrtl2m2TtYG%2BY%2Bzf7CHjodrOy0zio; nvr-cookie=77666; lo
+gin-already=' },
+  trailers: {},
+  method: 'GET',
+  url: '/test/add?a=10&b=20&_=1511242034415',
+  uuid: 'a2723630-ce7c-11e7-9abe-3ff6478afb98',
+  cookie: 'login-target=192.168.6.135; connect.sid=s%3AhG3MHUoCxsWftp38Y-2wP6QE_
+6fS5NMX.Xr63d18gW2LdMifrtl2m2TtYG%2BY%2Bzf7CHjodrOy0zio; nvr-cookie=77666; login
+-already=' }
+
+'Relay Server' <= 'Relay Client':
+================================================
+{ body: '{"code":0,"msg":"Success","output":30}',
+  uuid: '3731b300-ce7c-11e7-9abe-3ff6478afb98',
+  cmd: 'CMD_MAIN_TYPE/HTTP_REQUEST',
+  statusCode: 200,
+  url: '/test/add?a=10&b=20&_=1511241852851' }
+
+
+
+EX2: POST: /test/add
+
+'Relay Server' => 'Relay Client':
+================================================
+{ cmd: 'CMD_MAIN_TYPE/HTTP_REQUEST',
+  httpVersion: '1.1',
+  headers:
+   { host: '127.0.0.1',
+     connection: 'keep-alive',
+     'content-length': '15',
+     accept: 'application/json, text/javascript, */*; q=0.01',
+     origin: 'http://127.0.0.1',
+     'x-requested-with': 'XMLHttpRequest',
+     'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36
+(KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
+     'content-type': 'application/json; charset=UTF-8',
+     referer: 'http://127.0.0.1/test.html',
+     'accept-encoding': 'gzip, deflate, br',
+     'accept-language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+     cookie: 'login-target=192.168.6.135; connect.sid=s%3AhG3MHUoCxsWftp38Y-2wP6
+QE_6fS5NMX.Xr63d18gW2LdMifrtl2m2TtYG%2BY%2Bzf7CHjodrOy0zio; nvr-cookie=77666; lo
+gin-already=' },
+  trailers: {},
+  method: 'POST',
+  url: '/test/add',
+  body: '{"a":10,"b":20}',
+  uuid: 'dc4140e0-ce7c-11e7-b0b1-338c40684f70',
+  cookie: 'login-target=192.168.6.135; connect.sid=s%3AhG3MHUoCxsWftp38Y-2wP6QE_
+6fS5NMX.Xr63d18gW2LdMifrtl2m2TtYG%2BY%2Bzf7CHjodrOy0zio; nvr-cookie=77666; login
+-already=' }
+
+'Relay Server' <= 'Relay Client':
+==================================================
+  { body: '{"code":0,"msg":"Success","output":30}',
+  uuid: 'dc4140e0-ce7c-11e7-b0b1-338c40684f70',
+  cmd: 'CMD_MAIN_TYPE/HTTP_REQUEST',
+  statusCode: 200,
+  url: '/test/add' }

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>Relay TEST</title>
+	<style type="text/css">
+		.wrap {
+			max-width: 1024px;
+			margin: 0 auto;
+		}
+		.sub-content {
+			margin-bottom: 10px;
+		}
+		.result {
+			margin-left: 20px;
+		}
+		.mt-10 {
+			margin-top: 20px;
+		}
+	</style>
+</head>
+<body>
+	<div class="wrap">
+		<h1>Relay P2P Test Page</h1>
+		<hr/>
+		<h2>CGI TEST:</h2>		
+		<div class="sub-content">
+			<label for="cgi-param-a">a:</label>
+			<input id="cgi-param-a" value="10" type="number" />
+		</div>		
+		<div class="sub-content">
+			<label for="cgi-param-b">b:</label>
+			<input id="cgi-param-b" value="20" type="number" />
+		</div>				
+		<div class="sub-content mt-10">
+			<button id="cgi-get-btn">Send GET Request</button>
+			<span class="result">Result: </span>
+			<span id="cgi-get-result">None</span>
+		</div>
+		<div class="sub-content">
+			<button id="cgi-post-btn">Send POST Request</button>
+			<span class="result">Result: </span>
+			<span id="cgi-post-result">None</span>
+		</div>		
+	</div>
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>	
+	<script type="text/javascript">
+		var CGI_TEST_URL = '/test/add';
+		
+		cgiEventBinding('cgi-get-btn', 'GET', 'cgi-get-result');
+		cgiEventBinding('cgi-post-btn', 'POST', 'cgi-post-result');
+
+		function cgiEventBinding( btnId, method, resultId) {
+			$('#' + btnId).click(function(){
+				var a = +$('#cgi-param-a').val();
+				var b = +$('#cgi-param-b').val();
+				var that = this;
+				method = method.toUpperCase();
+
+				$(that).prop('disabled', true);
+				trans(method, {
+					url: CGI_TEST_URL,
+					data: {a: a, b: b},
+					success: function(json) {
+						if (json.code) {
+							$('#' + resultId).text(json.msg);
+						}
+						else {
+							$('#' + resultId).text(json.output);	
+						}
+					},
+					error: function(err) {
+						$('#' + resultId).text('Network Error Occurs!');
+					},
+					done: function() {
+						$(that).prop('disabled', false);
+					}
+				});
+			});
+		}
+
+		function trans (type, spec) {
+		  var _data, _contentType;
+
+		  if (type === 'GET') {
+		    _data = spec.data;
+		    _contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+		  }
+		  else {
+		    _data = JSON.stringify(spec.data);
+		    _contentType = 'application/json; charset=utf-8';
+		  }
+
+		  return $.ajax({
+	      url: spec.url,
+	      type: type,
+	      data: _data,
+	      contentType: _contentType,
+	      cache: false,
+	      dataType: 'json',
+	      success: function (json) {
+	        if (spec.success) {
+	          spec.success(json);
+	        }
+	      },
+	      error: function(jqXHR, textStatus, errorThrown) {
+	        var ct = jqXHR.responseText || "";		        
+	        console.error('AJAX Error', textStatus, jqXHR);
+	        if (spec.error) {
+	          spec.error.apply(null, arguments);
+	        }
+	      },
+	      complete: function () {
+	        if (spec.done) {
+	          spec.done.apply(null, arguments);
+	        }
+	      }
+		  });
+		}				
+	</script>	
+</body>
+</html>

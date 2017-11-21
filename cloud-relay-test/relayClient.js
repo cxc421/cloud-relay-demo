@@ -8,24 +8,25 @@ const { RELAY_SERVER_IP, RELAY_SERVER_PORT, WEB_SERVER_PORT, WEB_SERVER_IP } = r
 const { CMD, CMD_TYPE, RESULT, WS_PROTOCOL } = require('./constants.js');
 let ws = null;
 
-// debug
+// // debug
 const SHOW_LOG_TYPE = 'GENPBKEY_TEST';
-(()=>{	
-	const preLog = console.log;
-	console.log = function(type) {
-		if (type === SHOW_LOG_TYPE) {
-			Array.prototype.shift.call(arguments);
-			preLog.apply(console, arguments);
-			// preLog.apply(console, );
-		}
-	}
-})();
+// (()=>{	
+// 	const preLog = console.log;
+// 	console.log = function(type) {
+// 		if (type === SHOW_LOG_TYPE) {
+// 			Array.prototype.shift.call(arguments);
+// 			preLog.apply(console, arguments);
+// 			// preLog.apply(console, );
+// 		}
+// 	}
+// })();
 
 function onReceiveCloudMessage(dataJson) {
   const data = JSON.parse(dataJson);
 
   console.log('\nonReceiveCloudMessage:');
   console.log(data);
+  console.log('');
 
   if (data.cmd === CMD.FILE_REQUEST) {
     switch (data.cmdType) {
