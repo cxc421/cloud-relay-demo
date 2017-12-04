@@ -102,8 +102,7 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
         // ws.on('close', onWebsocketClose);     
         ws.on('close', () => {
           // count        
-          wsCounter.delete('http');
-          
+          wsCounter.delete('http');          
           // clear all cached response
           for (let uuid in resStore) {
             const res = resStore[uuid];

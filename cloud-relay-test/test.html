@@ -17,13 +17,19 @@
 		.mt-10 {
 			margin-top: 20px;
 		}
+		hr:nth-of-type(n+2) {
+			margin-top: 50px;
+		}
+		textarea {
+			margin-bottom: 10px;
+		}
 	</style>
 </head>
 <body>
 	<div class="wrap">
 		<h1>Relay P2P Test Page</h1>
 		<hr/>
-		<h2>CGI TEST:</h2>		
+		<h2>Web CGI TEST:</h2>		
 		<div class="sub-content">
 			<label for="cgi-param-a">a:</label>
 			<input id="cgi-param-a" value="10" type="number" />
@@ -41,12 +47,77 @@
 			<button id="cgi-post-btn">Send POST Request</button>
 			<span class="result">Result: </span>
 			<span id="cgi-post-result">None</span>
+		</div>	
+
+		<hr />
+		<h2>XMS POST /login :</h2>
+		<div class="sub-content">
+			<label for="nvr-account">Account:</label>
+			<input id="nvr-account" value="Admin" type="input" />
+		</div>
+		<div class="sub-content">
+			<label for="nvr-pswd">Password:</label>
+			<input id="nvr-pswd" value="123456" type="password" />
 		</div>		
+		<div class="sub-content">
+			<button id="nvr-login-btn">Send POST Request</button>
+			<span class="result">Result: </span>
+			<span id="nvr-login-result">None</span>
+		</div>				
+
+		<hr />
+		<h2>XMS GET /information/local_time :</h2>
+		<div class="sub-content">
+			<button id="info-localtime-get-btn">Send GET Request</button>
+			<span class="result">Result: </span>
+			<span id="info-localtime-get-result">None</span>
+		</div>				
+
+		<hr />
+		<h2>XMS POST /record/config :</h2>
+		<textarea rows="20" cols="50" readonly>{
+  "channel_edge_archiver_interval": 15,
+  "data_life_time": {
+    "cur": 50,
+    "max": 60,
+    "min": 0
+  },
+  "edge_archiver_interval": 15,
+  "record_circular": {
+    "enable": true,
+    "percentage": 5,
+    "size_mb": 5000,
+    "type": "percentage",
+    "type_opt": [
+      "percentage",
+      "size"
+    ]
+  },
+  "record_post_alarm": {
+    "cur": 20,
+    "enable": true,
+    "max": 120,
+    "min": 15
+  },
+  "record_pre_alarm": {
+    "cur": 7,
+    "enable": true,
+    "max": 120,
+    "min": 0
+  }
+}</textarea>		
+		<div class="sub-content">
+			<button id="record-config-btn">Send POST Request</button>
+			<span class="result">Result: </span>
+			<span id="record-config-result">None</span>
+		</div>				
+
 	</div>
 	<script
 	  src="https://code.jquery.com/jquery-3.2.1.min.js"
 	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
 	  crossorigin="anonymous"></script>	
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.10.0/js/md5.min.js"></script>
 	<script type="text/javascript">
 		var CGI_TEST_URL = '/test/add';
 		
@@ -81,6 +152,118 @@
 				});
 			});
 		}
+
+		$('#nvr-login-btn').click(function(){
+		  var account = $('#nvr-account').val();
+		  var password = $('#nvr-pswd').val();
+		  var encodeAccount = md5(account+":"+password);  
+		  var that = this;
+		  $(that).prop('disabled', true);
+		  $.ajax({
+		    type: "POST",
+		    url: "/login",
+		    data: "account=" + encodeAccount,          
+		    dataType: 'json',
+		    success: function( data, textStatus, jqXHR){      
+		    	$('#nvr-login-result').text( JSON.stringify(data) );
+		    },
+		    error: function( jqXHR, textStatus, errorStr ){
+		    	$('#nvr-login-result').text( 'Netwrok Error!' );
+		    },
+		    complete: function() {
+					$(that).prop('disabled', false);
+		    }
+		  }); 		  
+		});
+
+		$('#nvr-login-btn').click(function(){
+		  var account = $('#nvr-account').val();
+		  var password = $('#nvr-pswd').val();
+		  var encodeAccount = md5(account+":"+password);  
+		  var that = this;
+		  $(that).prop('disabled', true);
+		  $.ajax({
+		    type: "POST",
+		    url: "/login",
+		    data: "account=" + encodeAccount,          
+		    dataType: 'json',
+		    success: function( data, textStatus, jqXHR){      
+		    	$('#nvr-login-result').text( JSON.stringify(data) );
+		    },
+		    error: function( jqXHR, textStatus, errorStr ){
+		    	$('#nvr-login-result').text( 'Netwrok Error!' );
+		    },
+		    complete: function() {
+					$(that).prop('disabled', false);
+		    }
+		  }); 		  
+		});
+
+		$('#info-localtime-get-btn').click(function(){
+		  var that = this;
+		  $(that).prop('disabled', true);
+
+			trans('GET', {
+				url: '/information/local_time',
+				success: function(data) {
+					$('#info-localtime-get-result').text( JSON.stringify(data) );
+				},
+				error: function() {
+					$('#info-localtime-get-result').text(  'Netwrok Error!'  );
+				},
+				done: function() {
+					$(that).prop('disabled', false);					
+				}
+			});
+		});		
+
+		$('#record-config-btn').click(function(){
+		  var that = this;
+		  $(that).prop('disabled', true);
+
+			trans('POST', {
+				url: '/record/config',
+				data: {
+				  "data_life_time": {
+				    "cur": 50,
+				    "max": 60,
+				    "min": 0
+				  },
+				  "edge_archiver_interval": 15,
+				  "record_circular": {
+				    "enable": true,
+				    "percentage": 5,
+				    "size_mb": 5000,
+				    "type": "percentage",
+				    "type_opt": [
+				      "percentage",
+				      "size"
+				    ]
+				  },
+				  "record_post_alarm": {
+				    "cur": 20,
+				    "enable": true,
+				    "max": 120,
+				    "min": 15
+				  },
+				  "record_pre_alarm": {
+				    "cur": 7,
+				    "enable": true,
+				    "max": 120,
+				    "min": 0
+				  }					
+				},
+				success: function(data) {
+					$('#record-config-result').text( JSON.stringify(data) );
+				},
+				error: function() {
+					$('#record-config-result').text(  'Netwrok Error!'  );
+				},
+				done: function() {
+					$(that).prop('disabled', false);					
+				}
+			});
+		});
 
 		function trans (type, spec) {
 		  var _data, _contentType;
