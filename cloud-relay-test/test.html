@@ -176,29 +176,6 @@
 		  }); 		  
 		});
 
-		$('#nvr-login-btn').click(function(){
-		  var account = $('#nvr-account').val();
-		  var password = $('#nvr-pswd').val();
-		  var encodeAccount = md5(account+":"+password);  
-		  var that = this;
-		  $(that).prop('disabled', true);
-		  $.ajax({
-		    type: "POST",
-		    url: "/login",
-		    data: "account=" + encodeAccount,          
-		    dataType: 'json',
-		    success: function( data, textStatus, jqXHR){      
-		    	$('#nvr-login-result').text( JSON.stringify(data) );
-		    },
-		    error: function( jqXHR, textStatus, errorStr ){
-		    	$('#nvr-login-result').text( 'Netwrok Error!' );
-		    },
-		    complete: function() {
-					$(that).prop('disabled', false);
-		    }
-		  }); 		  
-		});
-
 		$('#info-localtime-get-btn').click(function(){
 		  var that = this;
 		  $(that).prop('disabled', true);
