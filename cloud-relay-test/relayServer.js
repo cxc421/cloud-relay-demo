@@ -16,6 +16,11 @@ const app = express();
 const { RELAY_SERVER_PORT } = require('./config.json');
 const { CMD, CMD_TYPE, RESULT, WS_PROTOCOL } = require('./constants.js');
 
+const UPLOAD_FOLDER_NAME = "cloud_upload";
+const UPLOAD_FOLDER_PATH = path.resolve(__dirname, UPLOAD_FOLDER_NAME);
+if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
+  fs.mkdirSync(UPLOAD_FOLDER_PATH);
+}
 
 const resStore = {};
 const wsStore = {};
@@ -64,9 +69,9 @@ const wsCounter = {
   // app.use(express.static( PUBLIC_FOLDER_PATH ));   
 
   // router
-  // app.get('/relay/download/:mainFolder/:subFolder/:fileName', onRelayDowload);  
-  // app.post('/relay/upload', onRelayUpload);
-  // app.post('/web/upload', onWebUpload); 
+  app.get('/relay/download/:mainFolder/:subFolder/:fileName', onRelayDowload);  
+  app.post('/relay/upload', onRelayUpload);
+  app.post('/web/upload', onWebUpload); 
   app.get('/favicon.ico', (req, res) => res.status(404).end('Files not found.'));
   app.get('/test.html', onGetTestPage);
   app.use('/', onGetDefaultRequest);

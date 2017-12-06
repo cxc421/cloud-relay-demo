@@ -8,25 +8,24 @@ const { RELAY_SERVER_IP, RELAY_SERVER_PORT, WEB_SERVER_PORT, WEB_SERVER_IP } = r
 const { CMD, CMD_TYPE, RESULT, WS_PROTOCOL } = require('./constants.js');
 let ws = null;
 
-// // debug
+// debug
 const SHOW_LOG_TYPE = 'GENPBKEY_TEST';
-// (()=>{	
-// 	const preLog = console.log;
-// 	console.log = function(type) {
-// 		if (type === SHOW_LOG_TYPE) {
-// 			Array.prototype.shift.call(arguments);
-// 			preLog.apply(console, arguments);
-// 			// preLog.apply(console, );
-// 		}
-// 	}
-// })();
+(()=>{  
+  const preLog = console.log;
+  console.log = function(type) {
+    if (type === SHOW_LOG_TYPE) {
+      Array.prototype.shift.call(arguments);
+      preLog.apply(console, arguments);
+      // preLog.apply(console, );
+    }
+  }
+})();
 
 function onReceiveCloudMessage(dataJson) {
   const data = JSON.parse(dataJson);
 
   console.log('\nonReceiveCloudMessage:');
   console.log(data);
-  console.log('');
 
   if (data.cmd === CMD.FILE_REQUEST) {
     switch (data.cmdType) {
@@ -171,11 +170,11 @@ function processNormalRequest2(data) {
       // console.log('str = ' + str);
       // console.log('typeof str = ' + typeof(str));
       if (res.statusCode === 302) {
-      	console.log('=====================');
-      	console.log(res.statusCode);
-      	console.log(res.headers.location);
-      	// console.log(  encodeURI(res.headers.location) );
-      	// console.log(res.headers['cache-control']);      	
+        console.log('=====================');
+        console.log(res.statusCode);
+        console.log(res.headers.location);
+        // console.log(  encodeURI(res.headers.location) );
+        // console.log(res.headers['cache-control']);       
       }
 
 
@@ -211,14 +210,14 @@ function processNormalRequest2(data) {
 }
 
 function processNormalRequest(data) {
-	const transfomrHeader = (obj) => {
-		for (let prop in obj) {
-			let val = obj[prop];
-			delete obj[prop];
-			obj[ normalizeHeaderCase(prop) ] = val;
-		}
-		return obj;
-	};
+  const transfomrHeader = (obj) => {
+    for (let prop in obj) {
+      let val = obj[prop];
+      delete obj[prop];
+      obj[ normalizeHeaderCase(prop) ] = val;
+    }
+    return obj;
+  };
 
   var options = {
     method: data.method,    
@@ -227,43 +226,43 @@ function processNormalRequest(data) {
     // headers: data.headers,    
     body: data.body,
     encoding : "utf8"
-  };	
+  };  
 
   if (data.method === 'POST') {
-	  const headers = options.headers;
-	  delete headers['Content-Length'];
-	  delete headers['content-length'];  	
+    const headers = options.headers;
+    delete headers['Content-Length'];
+    delete headers['content-length'];   
   }
 
   if (data.url === '/login') {
-	  options["headers"] = {
-	  	"Content-Type": "application/json",
-	  };
-	  // options.headers['Content-Type'] = 'application/json';	  
-	  options.json = true;	  
-	  options.body = JSON.parse(options.body);
-	  
-	  console.log('\n**************************************');
-	  console.log(options);
-	  // const headers = options.headers;
-	  // delete headers['Content-Length'];
-	  // delete headers['content-length'];
+    options["headers"] = {
+      "Content-Type": "application/json",
+    };
+    // options.headers['Content-Type'] = 'application/json';    
+    options.json = true;    
+    options.body = JSON.parse(options.body);
+    
+    console.log('\n**************************************');
+    console.log(options);
+    // const headers = options.headers;
+    // delete headers['Content-Length'];
+    // delete headers['content-length'];
   }
 
   // if (data.url.indexOf('gen_pbkey') >= 0) {
-  // 	console.log(SHOW_LOG_TYPE, '\n**************************************');
-  // 	console.log(SHOW_LOG_TYPE, options);
+  //  console.log(SHOW_LOG_TYPE, '\n**************************************');
+  //  console.log(SHOW_LOG_TYPE, options);
   // }
 
 
   request(options, function(err, res, body) {
-  	if (err) {
-  		console.error('ERROR QQ');
-  		console.error(err.message);
-  		console.error('\n Before Send:');
-  		console.error(options);
-  	}
-  	else {
+    if (err) {
+      console.error('ERROR QQ');
+      console.error(err.message);
+      console.error('\n Before Send:');
+      console.error(options);
+    }
+    else {
       if (ws && ws.readyState == WebSocket.OPEN) {
         let replyData = {
           body      : body,
@@ -277,16 +276,16 @@ function processNormalRequest(data) {
           // statusCode: res.statusCode
         };   
         if (data.url.indexOf('gen_pbkey') >= 0) {
-					console.log(SHOW_LOG_TYPE, replyData);
+          console.log(SHOW_LOG_TYPE, replyData);
         }        
 
         ws.send(JSON.stringify(replyData));
       }
       else {
         console.error('[request-callback]: Websocket Close!');
-      }  		
-  	}
-	});  
+      }     
+    }
+  });  
 }
 
 function downloadThenUpload(d_url, u_url, cb, cookies) {

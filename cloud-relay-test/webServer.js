@@ -13,7 +13,7 @@ const WebSocket = require('ws');
 // var formidable = require('formidable');
 // var util = require('./lib/util');
 const LOGIN_EXPIRE_TIME = 311040000000;
-// const PUBLIC_FOLDER_PATH = path.resolve(__dirname, "public");
+const PUBLIC_FOLDER_PATH = path.resolve(__dirname, "public");
 // const UPLOAD_FOLDER_PATH = path.resolve(__dirname, 'web_upload');
 const { WEB_SERVER_PORT } = require('./config.json');
 const { WS_PROTOCOL } = require('./constants.js');
@@ -39,7 +39,7 @@ const { WS_PROTOCOL } = require('./constants.js');
   app.use(bodyParser.urlencoded({extended: false}));
 
   //public static files
-  // app.use(express.static( PUBLIC_FOLDER_PATH )); 
+  app.use(express.static( PUBLIC_FOLDER_PATH )); 
 
   // cgi
   // app.get('/test_cookie', onCookieGet);
