@@ -1,0 +1,73 @@
+0. 初始化
+- Relay Server 啟動
+- Relay Client 啟動, 向 Relay Server 建立一個 websocket 通道 ( protocal: "WS_PROTOCOL/HTTP" )
+
+1. 一般 CGI Request
+流程:
+	(1). Relay Server 接收到 Web Client 發出的 CGI 請求, 經拆解後, 透過 websocket 傳遞下列 JSON 資料給 Relay Client:
+    {
+      cmd        : "CMD_MAIN_TYPE/HTTP_REQUEST",
+      headers    : req.headers,
+      method     : req.method,
+      url        : req.originalUrl,
+      body       : (method === 'POST' || method === 'PUT') ? JSON.stringify(req.body) : undefined,
+     	uuid       : uuid
+    }      	
+  (2). Relay Client 通過接收到的資訊, 重新向 Web Server 發出一樣的 HTTP Request.
+  (3). Relay Client 接收到 Web Server 的 HTTP Respond, 經拆解後, 透過 websocket 回傳下列 JSON 資料給 Relay Server:
+	  {
+	    body      : body,
+	    uuid      : data.uuid,
+	    cmd       : data.cmd,
+	    setCookie : res.headers['set-cookie'],
+	    statusCode: res.statusCode,
+	    location  : res.headers['location'],
+	    url       : data.url   
+	  };  
+	(4) Relay Client 通過接收到的資訊, 回傳給 Web Client.
+
+
+2. File Download
+流程:
+	(1). Relay Server 收到 Web Client 下載檔案的 HTTP 請求, 經拆解後, 透過 websocket 傳遞下列 JSON 資料給 Relay Client:
+		{
+      cmd     : "CMD_MAIN_TYPE/FILE_REQUEST",
+      cmdType : "CMD_SUB_TYPE/FILE_DOWNLOAD",
+      url     : req.originalUrl,      
+      fileName: fileName,
+      uuid    : uuid,
+      cookie  : cookie
+		}
+	(2). Relay Clinet 收到後
+	   - (a). 先利用 url & cookie  向 Web Server 下載(GET) 檔案
+	          (如果可以的話, 暫存在 file stream 就好, 不用寫到 disk)
+	   - (b). 再利用 { /relay/upload, cookie }  將下載的檔案上傳到 Relay Server.
+	   				如果上傳完成,  會 reply 下列訊息:
+						{
+              code     : 0,
+              msg      : "Upload success!",
+              subFolder: SUB_FOLDER_NAME
+            }	
+            注意檢查一下 code 是否為 0, 如果不為 0 代表上傳失敗   				
+     - (c). 上傳完成後, 再從 websocket 向 Relay Server 傳遞下列 JSON 訊息:
+     {
+        result   : "RESULT_TYPE/OK",
+        cmd      : cmd,
+        cmdType  : cmdType,
+        uuid     : uuid,
+        fileName : fileName,
+        url      : url,
+        subFolder: bodyData.subFolder     	
+     }
+     如果失敗, 回傳這些訊息即可:
+		 {
+        result  : "RESULT_TYPE/FAILED",
+        cmd     : cmd,
+        cmdType : cmdType,
+        uuid    : uuid,
+        fileName: fileName,
+        url     : url		
+		 }     
+	(3). Relay Server 收到 websocket 回傳的訊息後,
+	     如果回傳的訊息是失敗, 就把檔案回傳給 Web Client, 然後把檔案砍掉.
+	     如果回傳的訊息是失敗, 救回傳 '404 files not found' 訊息給 Web Client

@@ -10,16 +10,16 @@ let ws = null;
 
 // debug
 const SHOW_LOG_TYPE = 'GENPBKEY_TEST';
-(()=>{  
-  const preLog = console.log;
-  console.log = function(type) {
-    if (type === SHOW_LOG_TYPE) {
-      Array.prototype.shift.call(arguments);
-      preLog.apply(console, arguments);
-      // preLog.apply(console, );
-    }
-  }
-})();
+// (()=>{  
+//   const preLog = console.log;
+//   console.log = function(type) {
+//     if (type === SHOW_LOG_TYPE) {
+//       Array.prototype.shift.call(arguments);
+//       preLog.apply(console, arguments);
+//       // preLog.apply(console, );
+//     }
+//   }
+// })();
 
 function onReceiveCloudMessage(dataJson) {
   const data = JSON.parse(dataJson);
