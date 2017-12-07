@@ -78,7 +78,7 @@ function processWebSocketRequest(data) {
 function processFileDownloadRequest(data) {
   // console.log('\nIN processFileDownloadRequest: \n');
 
-  const { url, fileName, uuid, cmd, cmdType, cookie } = data;
+  const { url, fileName, uuid, cmd, cmdType, cookie} = data;
   const downloadUrl = `http://${ WEB_SERVER_IP }:${ WEB_SERVER_PORT }${ url }`;
   const uploadUrl = `http://${ RELAY_SERVER_IP }:${ RELAY_SERVER_PORT }/relay/upload`;  
   downloadThenUpload(downloadUrl, uploadUrl, ({code, body}) => {
@@ -125,12 +125,12 @@ function processFileDownloadRequest(data) {
 }
 
 function processFileUploadRequest(data) {
-  const { mainFolder, subFolder, fileNameList, uuid, cmd, cmdType } = data;  
+  const { mainFolder, subFolder, fileNameList, uuid, cmd, cmdType, cookie, url } = data;  
   const downlaodUrlList = fileNameList.map( 
     fileName => `http://${ RELAY_SERVER_IP }:${ RELAY_SERVER_PORT }/relay/download/${mainFolder}/${subFolder}/${fileName}` 
     // fileName => `http://${ RELAY_SERVER_IP }:${ RELAY_SERVER_PORT }/relay/download/${mainFolder}` 
   );
-  const uploadUrl = `http://${ WEB_SERVER_IP }:${ WEB_SERVER_PORT }/upload`;
+  const uploadUrl = `http://${ WEB_SERVER_IP }:${ WEB_SERVER_PORT }` + url;
   // console.log('========================');
   // console.log('fileNameList:');
   // console.log(fileNameList);
@@ -146,7 +146,7 @@ function processFileUploadRequest(data) {
     };
 
     ws.send(JSON.stringify(replyData));
-  });
+  }, cookie);
 }
 
 function processNormalRequest2(data) {

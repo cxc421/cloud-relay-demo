@@ -28,6 +28,15 @@
 <body>
 	<div class="wrap">
 		<h1>Relay P2P Test Page</h1>
+		<h2>Upload Test:</h2>		
+		<hr>
+		<form action="/web/upload" method="post" enctype="multipart/form-data">
+			<p>
+				<input type="file" name="file1">		  
+			</p>		  
+		  <!-- <input type="file" name="file2" multiple>       -->
+		  <input type="submit" value="Upload" />			
+		</form>				
 		<hr/>
 		<img src="img/usericon1.png" alt="Get image failed" />
 		<hr/>

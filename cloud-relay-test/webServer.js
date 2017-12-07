@@ -14,7 +14,7 @@ const WebSocket = require('ws');
 // var util = require('./lib/util');
 const LOGIN_EXPIRE_TIME = 311040000000;
 const PUBLIC_FOLDER_PATH = path.resolve(__dirname, "public");
-// const UPLOAD_FOLDER_PATH = path.resolve(__dirname, 'web_upload');
+const UPLOAD_FOLDER_PATH = path.resolve(__dirname, 'web_upload');
 const { WEB_SERVER_PORT } = require('./config.json');
 const { WS_PROTOCOL } = require('./constants.js');
 // const WEB_SERVER_PORT = 8080;
@@ -23,12 +23,12 @@ const { WS_PROTOCOL } = require('./constants.js');
 //   P2P : 'WS_PROTOCOL/P2P'
 // };
 
-// try {
-//   fs.accessSync(UPLOAD_FOLDER_PATH);
-// }
-// catch(e) {
-//   fs.mkdirSync(UPLOAD_FOLDER_PATH);
-// }
+try {
+  fs.accessSync(UPLOAD_FOLDER_PATH);
+}
+catch(e) {
+  fs.mkdirSync(UPLOAD_FOLDER_PATH);
+}
 
 (function() {
   const app = express();
@@ -44,7 +44,7 @@ const { WS_PROTOCOL } = require('./constants.js');
   // cgi
   // app.get('/test_cookie', onCookieGet);
   // app.get('/clear_cookie', onClearCookieGet);
-  // app.post('/upload', onFileUpload);
+  app.post('/web/upload', onFileUpload);
   // app.post('/test_post', onTestPost);
   app.all('/test/add', onRequestTestAdd);
 
@@ -111,4 +111,35 @@ function getReqParam (req) {
 
 function onRequestNotFound(req, res) {
   res.status(404).send('404 files not found.');
+}
+
+function onFileUpload(req, res) {
+  //check type is correct
+  var type = req.headers['content-type'] || '';
+  var isFormData = 0 === type.indexOf('multipart/form-data');
+  if( !isFormData ) {
+    res.status(400).end();
+  }
+  //start upload files
+  var form = new formidable.IncomingForm();
+  form.uploadDir =  UPLOAD_FOLDER_PATH;
+  form.keepExtensions = true;
+  form.on('file', function(field, file) {
+      //rename the incoming file to the file's name
+      if( file.name  ){
+        fs.rename(file.path, form.uploadDir + "/" + file.name);
+      }        
+  });
+  form.parse(req, function(err, fields, files){
+    console.log('Uplaod Complete!');
+    // res.status(204).end();
+    res.json({
+      code: 0,
+      msg: 'Upload Success'
+    });
+  });
+  form.on('progress', function(bytesRecv, bytesExpect){
+    var percent = Math.floor(bytesRecv/bytesExpect*100);
+    console.log(percent);
+  });
 }

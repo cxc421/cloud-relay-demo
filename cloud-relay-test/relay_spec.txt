@@ -69,5 +69,37 @@
         url     : url		
 		 }     
 	(3). Relay Server 收到 websocket 回傳的訊息後,
-	     如果回傳的訊息是失敗, 就把檔案回傳給 Web Client, 然後把檔案砍掉.
+	     如果回傳的訊息是成功, 就把檔案回傳給 Web Client, 然後把檔案砍掉.
 	     如果回傳的訊息是失敗, 救回傳 '404 files not found' 訊息給 Web Client
+
+4. File Upload
+流程:
+  (1). Relay Server 收到 Web Client 上傳檔案的 HTTP 請求, 經拆解後, 透過 websocket 傳遞下列 JSON 資料給 Relay Client:
+    {    
+      cmd         : "CMD_MAIN_TYPE/FILE_REQUEST",
+      cmdType     : "CMD_SUB_TYPE/FILE_UPLOAD",
+      url         : url,
+      uuid        : uuid,
+      cookie      : cookie,
+      mainFolder  : "FOLDER_NAME_1",
+      subFolder   : "FOLDER_NAME_2",           
+      fileNameList: ["filename_1", "filename_2", ....]
+    }  
+  (2). Relay Client 收到訊息後, 
+     - (a). 利用 cookie, mainFolder, subFolder, fileNameList 下載檔案
+       ex:   http://12.34.56.78/relay/download/FOLDER_NAME_1/FOLDER_NAME_2/filename_1
+             http://12.34.56.78/relay/download/FOLDER_NAME_1/FOLDER_NAME_2/filename_2
+     - (b). 再利用 cookie, url 將下載完的檔案上傳到 Web Server 上
+     - (c). 上傳完成後, 再從 websocket 向 Relay Server 傳遞下列 JSON 訊息:
+     {
+      uuid      : uuid,
+      cmd       : cmd,
+      cmdType   : cmdType,
+      mainFolder: mainFolder
+      subFolder : subFolder,
+      body      : body,
+      statusCode: code,
+      result   : "RESULT_TYPE/OK" / "RESULT_TYPE/FAILED",
+     }     
+  (3). Relay Server 收到訊息後
+    根據 result & body 回傳訊息給 Web Client, 然後把檔案砍掉.

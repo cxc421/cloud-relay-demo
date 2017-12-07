@@ -389,6 +389,7 @@ function onWebUpload(req, res) {
             count++;
             if (count === totalFilesNum) {
               askRelayClientToBypassUploadFile(
+                req,
                 res, 
                 SUB_FOLDER_NAME, 
                 fileList.map(f => f.fileName)
@@ -588,7 +589,7 @@ function processFileUploadResponse(res, replyData) {
   // }
 }
 
-function askRelayClientToBypassUploadFile(res, subFolder, fileNameList) {
+function askRelayClientToBypassUploadFile(req, res, subFolder, fileNameList) {
 
   if (globalWs && globalWs.readyState == WebSocket.OPEN) {
     const uuid = genUUID();  
@@ -597,10 +598,12 @@ function askRelayClientToBypassUploadFile(res, subFolder, fileNameList) {
       cmdType     : CMD_TYPE.FILE_UPLOAD,      
       mainFolder  : UPLOAD_FOLDER_NAME, // Watch Out! Is "_NAME", not "_FOLDER"
       subFolder   : subFolder,    
-      fileNameList: fileNameList      
+      fileNameList: fileNameList,
+      url         : req.originalUrl
     };
     resStore[uuid] = res;
     data['uuid'] = uuid;
+    data['cookie'] = req.headers.cookie;
     // console.log('\n=== send');
     // console.log(data);
     globalWs.send(JSON.stringify( data ));
