@@ -302,7 +302,7 @@
 			var configMap = {
 			      wsProtocol: 'web_liquid_info',    
 			      wsPort    :  getPort(),               // default value
-			      wsIp      : 'locolhost'  
+			      wsIp      : 'ws://' + location.hostname  
 			    },    
 			    stateMap = {
 			      everConnectSuccess: false
@@ -317,7 +317,7 @@
 			    stopStr          = "STOP",      
 			    ws;			
 
-      configMap.wsIp = 'ws://127.0.0.1';
+      // configMap.wsIp = 'ws://127.0.0.1';
       initWS(); 			
 
 			function initWS() {  
