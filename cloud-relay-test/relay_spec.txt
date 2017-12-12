@@ -103,3 +103,24 @@
      }     
   (3). Relay Server 收到訊息後
     根據 result & body 回傳訊息給 Web Client, 然後把檔案砍掉.
+
+
+5. WebSocket Bypass
+流程:
+(1). 當 Relay Server 收到 Web Client 發出的 websocket 連線, 假設叫 ws_a, 會以 uuid cached 住, 並傳送下列訊息給 Relay Client:
+    {
+      wsProtocol: wsProtocol,
+      uuid      : uuid,
+      cmd       : 'CMD_MAIN_TYPE/WEBSOCKET_REQUEST'      
+    }
+(2). 當 Relay Client 收到訊息後
+  - a. 向 Web   Server 建立新的 websocket 連線, protocol 為 wsProtocol. 假設新建立的連線叫 ws_b.
+    b. 向 Relay Server 建立新的 websocket 連線, protocol 有兩個: 第一個為 'WS_PROTOCOL/P2P', 第二個為 uuid. 假設新建立的連線叫 ws_c.
+       Relay Server 會根據 uuid 找到對應的 ws_a, 並將 ws_a & ws_c 綁定
+    c. Relay Client 將 ws_b & ws_c 互相綁定為 bypass 訊息的通道.
+
+(3).  之後, 從 web 發出的訊息要以下列方式依序傳遞: web-client => ws_a => ws_c => ws_b => web-server.
+      反之亦然.
+(4). 注意, 所有 websocket 接收到訊息時, 如果下一個要 bypass 的 websocket還沒綁定, 需要先暫存資料, 否則有可能遺失訊息.
+
+

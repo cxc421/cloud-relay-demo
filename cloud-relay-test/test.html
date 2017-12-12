@@ -17,7 +17,7 @@
 		.mt-10 {
 			margin-top: 20px;
 		}
-		hr:nth-of-type(n+2) {
+		hr:nth-of-type(n+1) {
 			margin-top: 50px;
 		}
 		textarea {
@@ -28,16 +28,22 @@
 <body>
 	<div class="wrap">
 		<h1>Relay P2P Test Page</h1>
-		<h2>Upload Test:</h2>		
-		<hr>
+		<h2>WebSocket Test:</h2>
+		<button id="ws-btn">Connect</button>
+		<hr />		
+		<h2>Upload Test:</h2>				
 		<form action="/web/upload" method="post" enctype="multipart/form-data">
 			<p>
 				<input type="file" name="file1">		  
 			</p>		  
+			<p>
+				<input type="file" name="file2">		  
+			</p>		  			
 		  <!-- <input type="file" name="file2" multiple>       -->
 		  <input type="submit" value="Upload" />			
 		</form>				
 		<hr/>
+		<h2>Download TEST:</h2>	
 		<img src="img/usericon1.png" alt="Get image failed" />
 		<hr/>
 		<h2>Web CGI TEST:</h2>		
@@ -290,7 +296,75 @@
 	        }
 	      }
 		  });
-		}				
+		}		
+
+		$('#ws-btn').click(function(){
+			var configMap = {
+			      wsProtocol: 'web_liquid_info',    
+			      wsPort    :  getPort(),               // default value
+			      wsIp      : 'locolhost'  
+			    },    
+			    stateMap = {
+			      everConnectSuccess: false
+			    },
+			    camInfoStr       = "camera_list",
+			    motionInfoStr    = "motion_info",
+			    pbCamInfoStr     = "pb_camera_list",
+			    pbMotionInfoStr  = "pb_motion_info",
+			    motionTriggerStr = "motion_trigger_info",
+			    eventStateStr    = "event_state",
+			    playStr          = "PLAY",
+			    stopStr          = "STOP",      
+			    ws;			
+
+      configMap.wsIp = 'ws://127.0.0.1';
+      initWS(); 			
+
+			function initWS() {  
+			  console.info('WEB_MODEL_WEBSOCKET = '  +  configMap.wsIp + ':' + configMap.wsPort);
+			  ws = new WebSocket(
+			    configMap.wsIp + ':' + configMap.wsPort,
+			    configMap.wsProtocol
+			  );
+			  ws.onmessage = onWebSocketMessage;
+			  ws.onopen = onWebSocketOpen;
+			  ws.onclose = onWebSocketClose;
+			}     
+			
+			function onWebSocketMessage(e) {				
+				console.log('Received Message: ' + e.data);
+			}
+
+			function onWebSocketOpen() {
+				// var msg = 'just monika - just monika - just monika';
+				var msg = 'Hi from browser!';
+				ws.send(msg);
+				console.log('WebSocket Open!');
+				console.log('Send Message: ' + msg);
+
+			}
+
+			function onWebSocketClose() {
+				console.log('WebSocket CLose!');
+			}
+		});				
+
+		function getPort() {
+			var port = +window.location.port;
+			if (port === 0) {
+				switch (window.location.protocol) {
+					case 'http:':
+						port = 80;
+					break;
+					case 'https:':
+						port = 443;
+					break;
+					default:
+						console.error('Unknow protocol = ' + window.location.protocol);
+				}
+			}			
+			return port;
+		}		
 	</script>	
 </body>
 </html>

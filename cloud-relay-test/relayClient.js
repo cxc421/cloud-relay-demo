@@ -8,24 +8,11 @@ const { RELAY_SERVER_IP, RELAY_SERVER_PORT, WEB_SERVER_PORT, WEB_SERVER_IP } = r
 const { CMD, CMD_TYPE, RESULT, WS_PROTOCOL } = require('./constants.js');
 let ws = null;
 
-// debug
-const SHOW_LOG_TYPE = 'GENPBKEY_TEST';
-// (()=>{  
-//   const preLog = console.log;
-//   console.log = function(type) {
-//     if (type === SHOW_LOG_TYPE) {
-//       Array.prototype.shift.call(arguments);
-//       preLog.apply(console, arguments);
-//       // preLog.apply(console, );
-//     }
-//   }
-// })();
-
 function onReceiveCloudMessage(dataJson) {
   const data = JSON.parse(dataJson);
 
-  console.log('\nonReceiveCloudMessage:');
-  console.log(data);
+  // console.log('\nonReceiveCloudMessage:');
+  // console.log(data);
 
   if (data.cmd === CMD.FILE_REQUEST) {
     switch (data.cmdType) {
@@ -170,9 +157,9 @@ function processNormalRequest2(data) {
       // console.log('str = ' + str);
       // console.log('typeof str = ' + typeof(str));
       if (res.statusCode === 302) {
-        console.log('=====================');
-        console.log(res.statusCode);
-        console.log(res.headers.location);
+        // console.log('=====================');
+        // console.log(res.statusCode);
+        // console.log(res.headers.location);
         // console.log(  encodeURI(res.headers.location) );
         // console.log(res.headers['cache-control']);       
       }
@@ -242,16 +229,16 @@ function processNormalRequest(data) {
     options.json = true;    
     options.body = JSON.parse(options.body);
     
-    console.log('\n**************************************');
-    console.log(options);
+    // console.log('\n**************************************');
+    // console.log(options);
     // const headers = options.headers;
     // delete headers['Content-Length'];
     // delete headers['content-length'];
   }
 
   // if (data.url.indexOf('gen_pbkey') >= 0) {
-  //  console.log(SHOW_LOG_TYPE, '\n**************************************');
-  //  console.log(SHOW_LOG_TYPE, options);
+  //  console.log('\n**************************************');
+  //  console.log(options);
   // }
 
 
@@ -276,7 +263,7 @@ function processNormalRequest(data) {
           // statusCode: res.statusCode
         };   
         if (data.url.indexOf('gen_pbkey') >= 0) {
-          console.log(SHOW_LOG_TYPE, replyData);
+          // console.log(replyData);
         }        
 
         ws.send(JSON.stringify(replyData));
@@ -375,19 +362,33 @@ function onWebSocketClose__WEB_P2P() {
 }
 
 function onWebSocketMessage(newMsg) {
-  if (this.__nextWs && this.__nextWs.readyState === WebSocket.OPEN) {
+  console.log('\nonWebSocketMessage:');
+  console.log('newMsg = ' + newMsg);  
+  const ws = this;
+
+
+  if (ws.__nextWs && ws.__nextWs.readyState === WebSocket.OPEN) {
     // Ensure pre cachedMsg all send
-    while( this.__cachedMsgList.length > 0 ) {
-      const cachedMsg = this.__cachedMsgList.shift();
-      this.__nextWs.send( cachedMsg );
+    while( ws.__cachedMsgList.length > 0 ) {
+      const cachedMsg = ws.__cachedMsgList.shift();
+      ws.__nextWs.send( cachedMsg );
     }
     // Send new msg
-    this.__nextWs.send( newMsg );
+    if (newMsg !== undefined) {
+      ws.__nextWs.send( newMsg );    
+    }    
   }
   else {
-    // Cached msg
-    this.__cachedMsgList.push( newMsg );
-  }
+    // Cached msg    
+    if (newMsg !== undefined) {
+      ws.__cachedMsgList.push( newMsg );
+    }    
+    if (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN) {
+      setTimeout(function(){
+        onWebSocketMessage.call(ws);
+      }, 1000);
+    }
+  }  
 }
 
 function onWebsocetError(e) {
@@ -396,7 +397,7 @@ function onWebsocetError(e) {
 
 function genNewWebSocketInstance() {
   ws = new WebSocket(`ws://${RELAY_SERVER_IP}:${RELAY_SERVER_PORT}`, WS_PROTOCOL.HTTP); 
-  ws.on('open', d => console.log(SHOW_LOG_TYPE, '[ws-client]: connected'));
+  ws.on('open', d => console.log('[ws-client]: connected'));
   ws.on('message', onReceiveCloudMessage);
   ws.on('error', onWebsocetError);
   ws.on('close', onWebSocketClose );  

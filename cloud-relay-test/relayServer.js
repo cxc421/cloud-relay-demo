@@ -1,27 +1,23 @@
+// node modules
 const http = require('http');
-const url = require('url');
-const fs = require('fs');
+const url  = require('url');
+const fs   = require('fs');
 const path = require('path');
 
-const express = require('express');
+// 3rd party modules
+const express      = require('express');
 const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
-const uaParser = require('ua-parser-js');
-const rimraf = require('rimraf');
-const formidable = require('formidable');
-const WebSocket = require('ws');
-const uuid = require('uuid');
+const bodyParser   = require('body-parser');
+const uaParser     = require('ua-parser-js');
+const rimraf       = require('rimraf');
+const formidable   = require('formidable');
+const WebSocket    = require('ws');
+const uuid         = require('uuid');
 
+// variables
 const app = express();
 const { RELAY_SERVER_PORT } = require('./config.json');
 const { CMD, CMD_TYPE, RESULT, WS_PROTOCOL } = require('./constants.js');
-
-const UPLOAD_FOLDER_NAME = "cloud_upload";
-const UPLOAD_FOLDER_PATH = path.resolve(__dirname, UPLOAD_FOLDER_NAME);
-if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
-  fs.mkdirSync(UPLOAD_FOLDER_PATH);
-}
-
 const resStore = {};
 const wsStore = {};
 let globalWs = null;  // Assume only one relayClient !!!!!!
@@ -54,19 +50,18 @@ const wsCounter = {
   }
 };
 
-
-// const UPLOAD_FOLDER_NAME = "cloud_upload";
-// const UPLOAD_FOLDER_PATH = path.resolve(__dirname, UPLOAD_FOLDER_NAME);
-// if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
-//   fs.mkdirSync(UPLOAD_FOLDER_PATH);
-// }
+// folder check
+const UPLOAD_FOLDER_NAME = "cloud_upload";
+const UPLOAD_FOLDER_PATH = path.resolve(__dirname, UPLOAD_FOLDER_NAME);
+if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
+  fs.mkdirSync(UPLOAD_FOLDER_PATH);
+}
 
 (function() {
   // middleware
   app.use(cookieParser() );
   app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: false }));
-  // app.use(express.static( PUBLIC_FOLDER_PATH ));   
+  app.use(bodyParser.urlencoded({ extended: false }));  
 
   // router
   app.get('/relay/download/:mainFolder/:subFolder/:fileName', onRelayDowload);  
@@ -74,27 +69,9 @@ const wsCounter = {
   app.post('/web/upload', onWebUpload); 
   app.get('/favicon.ico', (req, res) => res.status(404).end('Files not found.'));
   app.get('/test.html', onGetTestPage);
-  app.use('/', onGetDefaultRequest);
-  // app.use('/', makeNormalRequest);
+  app.use('/', onGetDefaultRequest);  
 
-  const server = http.createServer(app);
-  const handleProtocols = (protocols, req) => {
-    if (protocols[0] === WS_PROTOCOL.P2P) {
-      try {
-        const __nextWs = wsStore[ protocols[1] ];
-        req['__nextWs'] = __nextWs;
-      } 
-      catch(e) {
-        console.error('\n handleProtocols error:');
-        console.error(`protocols[1] = ${protocols[1]}`);
-        if (protocols[1]) {
-          console.error(`Can't find wsStore with this uuid!`);
-        }
-        return false;
-      }
-    }
-    return protocols[0];
-  };
+  const server = http.createServer(app);  
   const wss = new WebSocket.Server({ server, handleProtocols });
   wss.on('connection', function connection(ws, req) {
     switch (ws.protocol) {
@@ -184,8 +161,8 @@ const wsCounter = {
 
 //=========================== BEGIN CGI FUNCTIONS ===========================//
 function onGetDefaultRequest(req, res) {
-  console.log('\n----------------On Request---------------------:');
-  console.log( req.method + ': ' + req.originalUrl);
+  // console.log('\n----------------On Request---------------------:');
+  // console.log( req.method + ': ' + req.originalUrl);
   if (globalWs && globalWs.readyState == WebSocket.OPEN) {
     const uuid = genUUID();  
     const data = genDataToWs(req);
@@ -243,7 +220,7 @@ function onRelayUpload(req, res) {
             console.error(`Delte empty file ${file.path} FAILED!!`);
           }
           else {
-            console.log(`Delte empty file ${file.path} success!`);
+            // console.log(`Delte empty file ${file.path} success!`);
           }           
         });       
       }
@@ -309,7 +286,7 @@ function onRelayDowload(req, res) {
   // console.log(`req.params.filePath = ${req.params.filePath}`);  
   const {mainFolder, subFolder, fileName} = req.params;
   const fileAbsPath = path.resolve(__dirname, mainFolder, subFolder, fileName);
-  console.log(fileAbsPath);
+  // console.log(fileAbsPath);
   fs.access(fileAbsPath, (err) => {    
     if (err) {
       // console.log('a:' + err.message);
@@ -368,7 +345,7 @@ function onWebUpload(req, res) {
             console.error(`Delte empty file ${file.path} FAILED!!`);
           }
           else {
-            console.log(`Delte empty file ${file.path} success!`);
+            // console.log(`Delte empty file ${file.path} success!`);
           }           
         });       
       }
@@ -420,13 +397,31 @@ function onGetTestPage(req, res) {
 //=========================== END CGI FUNCTIONS ===========================//
 
 //=========================== BEGIN WEBSOCKET EVENTS ==============================//
+function handleProtocols (protocols, req) {
+  if (protocols[0] === WS_PROTOCOL.P2P) {
+    try {
+      const __nextWs = wsStore[ protocols[1] ];
+      req['__nextWs'] = __nextWs;
+    } 
+    catch(e) {
+      console.error('\n handleProtocols error:');
+      console.error(`protocols[1] = ${protocols[1]}`);
+      if (protocols[1]) {
+        console.error(`Can't find wsStore with this uuid!`);
+      }
+      return false;
+    }
+  }
+  return protocols[0];
+}
+
 function onWebSocketMessage( data ) {
   // data = JSON.parse(data);
   // console.log('[wss]: received: %s', data.result);
   const replyData = JSON.parse(data);
-  console.log('\n===================On Message====================:');
-  console.log(replyData);
-  console.log('');
+  // console.log('\n===================On Message====================:');
+  // console.log(replyData);
+  // console.log('');
   // console.log(`url=${replyData.url}, cmd=${replyData.cmd}, uuid=${replyData.uuid}`);
   // console.log( replyData );
   // console.log('\n=== received');
@@ -474,20 +469,39 @@ function onWebSocketOpen() {
 }
 
 function onWebSocketMessage_WEB_P2P( newMsg ) {
-  if (this.__nextWs !== null && this.__nextWs.readyState === WebSocket.OPEN) {
-    // Ensure pre cahedMsg All send
-    while( this.__cachedMsgList.length > 0 ) {
-      const cachedMsg = this.__cachedMsgList.shift();
-      this.__nextWs.send( cachedMsg );
+  console.log('\nonWebSocketMessage_WEB_P2P:');
+  console.log('newMsg = ' + newMsg);
+  const ws = this;
+  if (ws.__nextWs && ws.__nextWs.readyState === WebSocket.OPEN) {
+    console.log('__nextWs is READY');
+    // Ensure pre cachedMsg all send
+    while( ws.__cachedMsgList.length > 0 ) {
+      const cachedMsg = ws.__cachedMsgList.shift();
+      ws.__nextWs.send( cachedMsg );
+      console.log('send cached msg: ' + cachedMsg);
     }
     // Send new msg
-    this.__nextWs.send( newMsg );
+    if (newMsg !== undefined) {
+      ws.__nextWs.send( newMsg );    
+      console.log('send newMsg: ' + newMsg);
+    }        
   }
   else {
-    // Cached msg
-    this.__cachedMsgList.push( newMsg );
-  }
+    console.log('__nextWs is NOT_READY');
+    // Cached msg    
+    if (newMsg !== undefined) {
+      ws.__cachedMsgList.push( newMsg );      
+      console.log('cachedMsg: ' + newMsg);
+    }    
+    if (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN) {      
+      setTimeout(function(){
+        onWebSocketMessage_WEB_P2P.call(ws);
+      }, 1000);
+      console.log('setTimeout 1000ms to recall ws');
+    }
+  }  
 }
+
 //=========================== END WEBSOCKET EVENTS ==============================//
 
 //=========================== BEGIN PRIVATE FUNCTIONS ===============================//
@@ -604,8 +618,6 @@ function askRelayClientToBypassUploadFile(req, res, subFolder, fileNameList) {
     resStore[uuid] = res;
     data['uuid'] = uuid;
     data['cookie'] = req.headers.cookie;
-    // console.log('\n=== send');
-    // console.log(data);
     globalWs.send(JSON.stringify( data ));
   }
   else {

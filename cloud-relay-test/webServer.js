@@ -53,22 +53,28 @@ catch(e) {
 
   // start server
  const server = http.createServer(app);
- // const handleProtocols = (protocols, req) => {
- //  console.log('New protocols:', protocols);
- //  if (protocols[0] === 'web_liquid_info') {
- //    return protocols[0];
- //  }
- //  console.error('Wrong WebSocket protocol = ' + protocols[0]);
- //  return false;  
- // };
- // const wss = new WebSocket.Server({ server, handleProtocols }); 
- // wss.on('connection', (ws, req) => {
- //  console.log('New Websocket Connected!');
- //  ws.on('message', (message) => console.log('Message received:' + message));
- //  ws.on('close', () => console.log('WebSocket Close.'));
- //  ws.send('Msg from NVR -- 192.168.6.191');
- // });
- // wss.on('error', (error) => console.error('[wss] Error! ' + error.message));
+ const handleProtocols = (protocols, req) => {
+  console.log('New protocols:', protocols);
+  if (protocols[0] === 'web_liquid_info') {
+    return protocols[0];
+  }
+  console.error('Wrong WebSocket protocol = ' + protocols[0]);
+  return false;  
+ };
+ const wss = new WebSocket.Server({ server, handleProtocols }); 
+ wss.on('connection', (ws, req) => {
+  console.log('\nNew Websocket Connected!');
+  ws.on('message', (message) => {
+    console.log('\nReceived Msg:' + message);
+    ws.send('You say, "' + message + '", right?');
+  });
+  ws.on('close', () => console.log('\nWebSocket Close.'));
+
+  const msg = 'Hello from web-server';
+  ws.send(msg);
+  console.log('\nSend Msg: ' + msg)
+ });
+ wss.on('error', (error) => console.error('[wss] Error! ' + error.message));
 
  server.listen(WEB_SERVER_PORT, () => console.log(`Listening on ${ server.address().port }`));
 })();
