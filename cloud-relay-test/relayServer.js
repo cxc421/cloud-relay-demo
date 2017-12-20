@@ -400,7 +400,15 @@ function onGetTestPage(req, res) {
 function handleProtocols (protocols, req) {
   if (protocols[0] === WS_PROTOCOL.P2P) {
     try {
-      const __nextWs = wsStore[ protocols[1] ];
+      console.log('\nprotocols[0] = ' + protocols[0]);
+      console.log('protocols[1] = ' + protocols[1]);
+      if (!wsStore.hasOwnProperty(protocols[1])) {
+        console.log('Can not find this uuid = ' + protocols[1]);
+        console.log('Current possible uuids are: ' + Object.keys(wsStore));
+        console.log('Reject connection!');
+        return false;
+      }
+      const __nextWs = wsStore[ protocols[1] ];      
       req['__nextWs'] = __nextWs;
     } 
     catch(e) {
@@ -469,35 +477,35 @@ function onWebSocketOpen() {
 }
 
 function onWebSocketMessage_WEB_P2P( newMsg ) {
-  console.log('\nonWebSocketMessage_WEB_P2P:');
-  console.log('newMsg = ' + newMsg);
+  // console.log('\nonWebSocketMessage_WEB_P2P:');
+  // console.log('newMsg = ' + newMsg);
   const ws = this;
   if (ws.__nextWs && ws.__nextWs.readyState === WebSocket.OPEN) {
-    console.log('__nextWs is READY');
+    // console.log('__nextWs is READY');
     // Ensure pre cachedMsg all send
     while( ws.__cachedMsgList.length > 0 ) {
       const cachedMsg = ws.__cachedMsgList.shift();
       ws.__nextWs.send( cachedMsg );
-      console.log('send cached msg: ' + cachedMsg);
+      // console.log('send cached msg: ' + cachedMsg);
     }
     // Send new msg
     if (newMsg !== undefined) {
       ws.__nextWs.send( newMsg );    
-      console.log('send newMsg: ' + newMsg);
+      // console.log('send newMsg: ' + newMsg);
     }        
   }
   else {
-    console.log('__nextWs is NOT_READY');
+    // console.log('__nextWs is NOT_READY');
     // Cached msg    
     if (newMsg !== undefined) {
       ws.__cachedMsgList.push( newMsg );      
-      console.log('cachedMsg: ' + newMsg);
+      // console.log('cachedMsg: ' + newMsg);
     }    
     if (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN) {      
       setTimeout(function(){
         onWebSocketMessage_WEB_P2P.call(ws);
       }, 1000);
-      console.log('setTimeout 1000ms to recall ws');
+      // console.log('setTimeout 1000ms to recall ws');
     }
   }  
 }
