@@ -337,11 +337,28 @@
 
 			function onWebSocketOpen() {
 				// var msg = 'just monika - just monika - just monika';
-				var msg = 'Hi from browser!';
+				var msg = 'Hi from browser - A!';
 				ws.send(msg);
 				console.log('WebSocket Open!');
 				console.log('Send Message: ' + msg);
 
+				var msg2 = 'Hi from browser - B!';
+				var msg3 = 'Hi from browser - C!';
+				sendLog(msg2, 100);
+				sendLog(msg3, 200);
+			}
+
+			function sendLog(msg, delay) {
+				if (delay === 0) {
+					ws.send(msg);
+					console.log('Send Message: ' + msg);
+				}
+				else {
+					setTimeout(function(){
+						ws.send(msg);
+						console.log('Send Message: ' + msg);						
+					}, delay);
+				}
 			}
 
 			function onWebSocketClose() {
