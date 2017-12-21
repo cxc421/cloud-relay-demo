@@ -197,20 +197,20 @@ function processNormalRequest2(data) {
 }
 
 function processNormalRequest(data) {
-  const transfomrHeader = (obj) => {
-    for (let prop in obj) {
-      let val = obj[prop];
-      delete obj[prop];
-      obj[ normalizeHeaderCase(prop) ] = val;
-    }
-    return obj;
-  };
+  // const transfomrHeader = (obj) => {
+  //   for (let prop in obj) {
+  //     let val = obj[prop];
+  //     delete obj[prop];
+  //     obj[ normalizeHeaderCase(prop) ] = val;
+  //   }
+  //   return obj;
+  // };
 
   var options = {
     method: data.method,    
     url: `http://${WEB_SERVER_IP}:${WEB_SERVER_PORT}${data.url}`,
-    headers: transfomrHeader(data.headers),    
-    // headers: data.headers,    
+    // headers: transfomrHeader(data.headers),    
+    headers: data.headers,    
     body: data.body,
     encoding : "utf8"
   };  
@@ -362,8 +362,8 @@ function onWebSocketClose__WEB_P2P() {
 }
 
 function onWebSocketMessage(newMsg) {
-  console.log('\nonWebSocketMessage:');
-  console.log('newMsg = ' + newMsg);  
+  // console.log('\nonWebSocketMessage:');
+  // console.log('newMsg = ' + newMsg);  
   const ws = this;
 
 

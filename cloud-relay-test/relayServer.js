@@ -13,6 +13,7 @@ const rimraf       = require('rimraf');
 const formidable   = require('formidable');
 const WebSocket    = require('ws');
 const uuid         = require('uuid');
+const normalizeHeaderCase = require("header-case-normalizer");
 
 // variables
 const app = express();
@@ -528,10 +529,17 @@ function genDataToWs(req) {
     };
   }
   else {
+    
+    const headers = {};
+    for (let prop in req.headers) {
+      let newProp = normalizeHeaderCase(prop);
+      headers[newProp] = req.headers[prop];
+    }
+
     return {
       cmd        : CMD.HTTP_REQUEST,
       httpVersion: req.httpVersion,
-      headers    : req.headers,
+      headers    : headers,
       trailers   : req.trailers,
       method     : req.method,
       url        : req.originalUrl,
