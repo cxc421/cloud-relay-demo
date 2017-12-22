@@ -92,6 +92,8 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
             res.status(500).end('WebSocket Close.');
             delete resStore[uuid];
           }
+				  console.log(`\nRemove All Cached UUID`);
+				  console.log('Current uuid: ' + Object.keys(resStore));                        
           // clear cached webscoket
           globalWs = null;
         });         
@@ -173,6 +175,9 @@ function onGetDefaultRequest(req, res) {
     // console.log('\n=== send');
     // console.log(data);
     globalWs.send(JSON.stringify( data ));
+
+    console.log(`\nAdd cached: url=${req.originalUrl}, uuid=${uuid}`);
+    console.log('Current uuid: ' + Object.keys(resStore));
   }
   else {
     res.status(500).end('WebSocket Not connected!');
@@ -458,6 +463,8 @@ function onWebSocketMessage( data ) {
     processNormalResponse(res, replyData);
   }
   delete resStore[replyData.uuid];
+  console.log(`\nRemove cached: uuid=${uuid}`);
+  console.log('Current uuid: ' + Object.keys(resStore));  
 }
 
 function onWebsocketClose() {
@@ -466,8 +473,10 @@ function onWebsocketClose() {
   for (let uuid in resStore) {
     const res = resStore[uuid];
     res.status(500).end('WebSocket Close.');
-    delete resStore[uuid];
+    delete resStore[uuid];      
   }
+  console.log(`\nRemove All cached uuid`);
+  console.log('Current uuid: ' + Object.keys(resStore));  
   // clear cached webscoket
   globalWs = null;
 }
@@ -635,6 +644,8 @@ function askRelayClientToBypassUploadFile(req, res, subFolder, fileNameList) {
     data['uuid'] = uuid;
     data['cookie'] = req.headers.cookie;
     globalWs.send(JSON.stringify( data ));
+	  console.log(`\nAdd cached: url=${req.originalUrl}, uuid=${uuid}`);
+	  console.log('Current uuid: ' + Object.keys(resStore));      
   }
   else {
     res.status(500).end('WebSocket Not connected!');
