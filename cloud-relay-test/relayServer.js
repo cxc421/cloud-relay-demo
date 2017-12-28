@@ -126,7 +126,9 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
         break;      
       }  
       default: {
-        // count        
+        // count                
+        const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+        console.log(`protocol_name = ${ws.protocol}, from = ${ip}`);
         wsCounter.add('web');
 
         const uuid = genUUID();
@@ -148,7 +150,7 @@ if (!fs.existsSync(UPLOAD_FOLDER_PATH)){
         });                    
         askRelayClientMakeNewSocket(ws.protocol, uuid);
         break;
-      }    
+      }          
     }
     // ws.send('something');
   });
